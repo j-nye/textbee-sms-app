@@ -1,0 +1,212 @@
+# Web SMS App — Design Spec
+
+**Date:** 2026-06-07  
+**Status:** Approved  
+**Tech Stack:** Python · Flask · SQLite · APScheduler · Google People API  
+
+---
+
+## Overview
+
+A local web application that provides a browser-based interface for sending SMS messages via the Textbee API. It runs alongside the existing `sms.py` CLI app, sharing the same `contacts.db` SQLite database. Intended for single-user, local use only (no authentication, no remote access).
+
+---
+
+## Architecture
+
+```
+Browser (http://localhost:5000)
+        ↕  HTTP
+Flask server (web_app.py)
+        ↕  SQLite
+contacts.db  ←→  sms.py (CLI, continues to work independently)
+
+External services:
+  - Textbee API       (SMS gateway via Android phone)
+  - Google People API (contact sync, OAuth 2.0)
+  - APScheduler       (in-process job scheduler)
+```
+
+### File Structure
+
+```
+SMS-App/
+├── sms.py                  # existing CLI app (unchanged)
+├── contacts.db             # shared database
+├── web_app/
+│   ├── app.py              # Flask app factory, route registration
+│   ├── db.py               # database init, shared helpers
+│   ├── routes/
+│   │   ├── send.py         # Send page routes
+│   │   ├── contacts.py     # Contacts CRUD + Google sync
+│   │   ├── templates.py    # Message template CRUD
+│   │   ├── history.py      # Message history routes
+│   │   ├── schedule.py     # Scheduled message routes
+│   │   └── settings.py     # Credentials + Google OAuth
+│   ├── scheduler.py        # APScheduler setup + job dispatch
+│   ├── google_sync.py      # Google People API integration
+│   ├── textbee.py          # Textbee send logic (extracted from CLI)
+│   ├── templates/          # Jinja2 HTML templates
+│   │   ├── base.html       # Sidebar layout shell
+│   │   ├── send.html
+│   │   ├── contacts.html
+│   │   ├── templates.html
+│   │   ├── history.html
+│   │   ├── schedule.html
+│   │   └── settings.html
+│   └── static/
+│       └── app.css         # Minimal custom styles
+├── .env                    # Textbee + Google credentials (existing)
+└── requirements.txt        # Flask, APScheduler, google-auth, mistune
+```
+
+---
+
+## Database Schema
+
+The existing `contacts` table is unchanged. Three new tables are added to `contacts.db`:
+
+### `messages`
+Stores every sent message for history.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | INTEGER PK | |
+| recipients | TEXT | JSON array of phone numbers |
+| message | TEXT | Final rendered message text |
+| sent_at | DATETIME | UTC timestamp |
+| status | TEXT | `sent` / `failed` |
+| error | TEXT | Error message if failed, nullable |
+
+### `templates`
+Markdown message templates.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | INTEGER PK | |
+| name | TEXT | Display name |
+| body_markdown | TEXT | Raw markdown source |
+| created_at | DATETIME | UTC timestamp |
+| updated_at | DATETIME | UTC timestamp |
+
+### `scheduled_messages`
+One-time and recurring scheduled sends.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | INTEGER PK | |
+| recipients | TEXT | JSON array of phone numbers |
+| template_id | INTEGER | FK → templates.id, nullable |
+| message | TEXT | Raw message text (used if no template) |
+| send_at | DATETIME | Next scheduled send time (UTC) |
+| recurrence | TEXT | `null` / `daily` / `weekly` / `monthly` |
+| recurrence_day | INTEGER | Day of week (0=Mon) or day of month |
+| status | TEXT | `pending` / `sent` / `cancelled` |
+| created_at | DATETIME | UTC timestamp |
+
+---
+
+## Pages & Features
+
+### Send
+- Recipient selector: search contacts by name, or select a saved group, or type a number manually
+- Message composer: plain text area, or select a saved template (rendered from markdown)
+- Preview: shows rendered markdown before sending
+- On submit: calls Textbee API, logs result to `messages` table
+- Success/failure shown inline (no full-page reload)
+
+### Contacts
+- Table listing all contacts (id, name, phone, group)
+- Add / Edit / Delete inline forms
+- Import from CSV (same format as CLI app)
+- Google Contacts sync button: triggers OAuth flow if not yet authorized, then pulls contacts from Google People API into local DB (merge by phone number — no duplicates)
+
+### Templates
+- List of saved templates with name and preview
+- Create/edit template: name field + markdown editor (textarea with monospace font)
+- Rendered preview panel alongside the editor
+- Delete with confirmation
+- Markdown rendered using `mistune` library
+
+### History
+- Chronological table of all sent messages
+- Columns: date/time, recipients, message preview, status (sent/failed)
+- Filterable by date range and status
+- Click a row to expand and see full message text
+
+### Schedule
+- List view of all scheduled messages (upcoming first)
+- Create scheduled message: pick recipients, pick template or write message, set date/time, optionally set recurrence (none / daily / weekly / monthly)
+- Cancel a scheduled message
+- APScheduler checks every minute and fires due jobs; after firing, one-time jobs are marked `sent`, recurring jobs have `send_at` advanced to the next occurrence
+
+### Settings
+- Textbee API Key and Device ID fields (reads/writes `.env` file)
+- Google Contacts: shows auth status, "Connect Google Account" button triggers OAuth flow, "Disconnect" revokes token
+- "Test connection" button sends a test ping to Textbee API
+
+---
+
+## Google Contacts Integration
+
+- Uses **Google People API** via `google-auth-oauthlib` + `google-api-python-client`
+- OAuth 2.0 flow: user clicks "Connect" → redirected to Google consent screen → callback stores token in `.env` (or a local `token.json`)
+- Sync logic: fetch all contacts with phone numbers from Google, insert/update local DB by matching on normalized phone number; if a match exists, update the name to the Google value; if no match, insert as new contact
+- Sync is manual (button-triggered), not automatic
+- Requires user to create a Google Cloud project and OAuth credentials (documented in README)
+
+---
+
+## Scheduling
+
+- **APScheduler** runs in-process with the Flask app using `BackgroundScheduler`
+- On app start, all `pending` scheduled jobs are loaded from DB and registered
+- Every minute, APScheduler checks for due jobs and dispatches them via the Textbee send function
+- **One-time:** after firing, status set to `sent`
+- **Recurring:** after firing, `send_at` advanced to next occurrence based on `recurrence` + `recurrence_day`, status stays `pending`
+- If the app is not running when a scheduled time passes, the job fires immediately on next app start (catch-up behavior)
+
+---
+
+## Error Handling
+
+- **Textbee API failure:** log error to `messages.error`, show failure status in history; do not retry automatically
+- **Google OAuth failure:** show error message in Settings, keep existing contacts intact
+- **Scheduler job failure:** log error to `messages` table, mark as `failed`; recurring jobs still advance to next occurrence
+- **DB errors:** surface as 500 error pages with a plain message
+- All errors logged to console (stdout) for local debugging
+
+---
+
+## Dependencies
+
+```
+Flask>=3.0
+APScheduler>=3.10
+google-auth-oauthlib>=1.2
+google-api-python-client>=2.100
+mistune>=3.0       # markdown rendering
+python-dotenv>=1.0
+```
+
+---
+
+## Running the App
+
+```bash
+pip install -r requirements.txt
+python web_app/app.py
+# Open http://localhost:5000
+```
+
+The CLI app (`sms.py`) continues to work independently by running `python sms.py` as before.
+
+---
+
+## Out of Scope
+
+- User authentication (local only, no login needed)
+- Mobile-responsive design (desktop browser only)
+- Email notifications
+- SMS replies / inbound messages
+- Multi-user support
