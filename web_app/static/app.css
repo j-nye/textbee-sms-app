@@ -1,0 +1,95 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    background: #f8fafc;
+    color: #1e293b;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Sidebar */
+#sidebar {
+    width: 200px;
+    background: #1e293b;
+    color: #cbd5e1;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+#sidebar .brand {
+    padding: 20px 16px 16px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    border-bottom: 1px solid #334155;
+}
+
+#sidebar nav a {
+    display: block;
+    padding: 10px 16px;
+    color: #94a3b8;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: background 0.15s;
+}
+
+#sidebar nav a:hover {
+    background: #334155;
+    color: #fff;
+}
+
+#sidebar nav a.active {
+    background: #334155;
+    color: #fff;
+    border-left-color: #3b82f6;
+}
+
+/* Main content */
+#content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+}
+
+h1 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+
+/* Flash messages */
+.flash { padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
+.flash.success { background: #dcfce7; color: #166534; }
+.flash.error   { background: #fee2e2; color: #991b1b; }
+.flash.info    { background: #dbeafe; color: #1e40af; }
+
+/* Forms */
+label { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 4px; margin-top: 12px; }
+input[type=text], input[type=password], textarea, select {
+    width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1;
+    border-radius: 6px; font-size: 14px; background: #fff;
+}
+textarea { resize: vertical; }
+
+/* Buttons */
+.btn { display: inline-block; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+.btn-primary   { background: #3b82f6; color: #fff; }
+.btn-danger    { background: #ef4444; color: #fff; }
+.btn-secondary { background: #e2e8f0; color: #1e293b; }
+.btn-sm        { padding: 5px 10px; font-size: 12px; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 12px; background: #f1f5f9; font-weight: 600; color: #475569; border-bottom: 1px solid #e2e8f0; }
+td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+
+/* Cards */
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+
+/* Markdown preview */
+.md-preview { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; min-height: 80px; font-size: 13px; line-height: 1.6; }
+.md-preview p { margin-bottom: 8px; }
+.md-preview ul, .md-preview ol { margin-left: 20px; margin-bottom: 8px; }
