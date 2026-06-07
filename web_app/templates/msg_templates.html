@@ -1,2 +1,82 @@
 {% extends "base.html" %}
-{% block content %}<h1>Coming soon</h1>{% endblock %}
+{% block title %}Templates — SMS App{% endblock %}
+{% block content %}
+<h1>Message Templates</h1>
+
+<button class="btn btn-primary" style="margin-bottom:20px" onclick="document.getElementById('new-form').style.display='block';this.style.display='none'">+ New Template</button>
+
+<div id="new-form" class="card" style="display:none">
+  <h2>New Template</h2>
+  <form method="post" action="{{ url_for('msg_templates.create') }}">
+    <label>Name</label>
+    <input type="text" name="name" required>
+    <label>Message (Markdown)</label>
+    <div style="display:flex;gap:12px;margin-top:4px">
+      <textarea name="body_markdown" rows="8" style="flex:1;font-family:monospace"
+        oninput="updatePreview(this.value, 'new-preview')"></textarea>
+      <div style="flex:1">
+        <div class="label" style="margin-bottom:6px">Preview</div>
+        <div class="md-preview" id="new-preview"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('new-form').style.display='none'">Cancel</button>
+    </div>
+  </form>
+</div>
+
+{% if templates %}
+{% for t in templates %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <strong>{{ t['name'] }}</strong>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-secondary btn-sm" onclick="toggleEditTmpl({{ t['id'] }})">Edit</button>
+      <form method="post" action="{{ url_for('msg_templates.delete', tmpl_id=t['id']) }}" style="display:inline" onsubmit="return confirm('Delete this template?')">
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
+    </div>
+  </div>
+  <div class="md-preview">{{ markdown(t['body_markdown']) | safe }}</div>
+
+  <div id="edit-tmpl-{{ t['id'] }}" style="display:none;margin-top:14px">
+    <form method="post" action="{{ url_for('msg_templates.edit', tmpl_id=t['id']) }}">
+      <label>Name</label>
+      <input type="text" name="name" value="{{ t['name'] }}" required>
+      <label>Message (Markdown)</label>
+      <div style="display:flex;gap:12px;margin-top:4px">
+        <textarea name="body_markdown" rows="6" style="flex:1;font-family:monospace"
+          oninput="updatePreview(this.value, 'edit-preview-{{ t['id'] }}')">{{ t['body_markdown'] }}</textarea>
+        <div style="flex:1">
+          <div class="label" style="margin-bottom:6px">Preview</div>
+          <div class="md-preview" id="edit-preview-{{ t['id'] }}">{{ markdown(t['body_markdown']) | safe }}</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" onclick="toggleEditTmpl({{ t['id'] }})">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<p style="color:#64748b">No templates yet. Create one above.</p>
+{% endif %}
+
+<script>
+function toggleEditTmpl(id) {
+  const d = document.getElementById('edit-tmpl-' + id);
+  d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
+
+function updatePreview(markdown, previewId) {
+  if (window.marked) {
+    document.getElementById(previewId).innerHTML = marked.parse(markdown);
+  }
+}
+</script>
+<!-- marked.js for live client-side preview -->
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous"></script>
+{% endblock %}
