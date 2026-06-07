@@ -6,6 +6,21 @@
 
 ---
 
+## Implementation Note — Documentation
+
+When implementing this application, **always use the Context7 MCP server** (`resolve-library-id` + `query-docs`) to fetch current documentation for all libraries before writing code. This applies to:
+
+- **Flask** — routing, Jinja2 templates, request handling
+- **APScheduler** — `BackgroundScheduler`, job triggers (date, interval, cron)
+- **google-auth-oauthlib** — OAuth 2.0 flow
+- **google-api-python-client** — People API calls
+- **mistune** — markdown rendering API
+- **python-dotenv** — `.env` read/write
+
+Do not rely on training-data knowledge for these libraries — fetch current docs every time.
+
+---
+
 ## Overview
 
 A local web application that provides a browser-based interface for sending SMS messages via the Textbee API. It runs alongside the existing `sms.py` CLI app, sharing the same `contacts.db` SQLite database. Intended for single-user, local use only (no authentication, no remote access).
@@ -42,7 +57,8 @@ SMS-App/
 │   │   ├── templates.py    # Message template CRUD
 │   │   ├── history.py      # Message history routes
 │   │   ├── schedule.py     # Scheduled message routes
-│   │   └── settings.py     # Credentials + Google OAuth
+│   │   ├── settings.py     # Credentials + Google OAuth
+│   │   └── help.py         # Help page route
 │   ├── scheduler.py        # APScheduler setup + job dispatch
 │   ├── google_sync.py      # Google People API integration
 │   ├── textbee.py          # Textbee send logic (extracted from CLI)
@@ -53,7 +69,8 @@ SMS-App/
 │   │   ├── templates.html
 │   │   ├── history.html
 │   │   ├── schedule.html
-│   │   └── settings.html
+│   │   ├── settings.html
+│   │   └── help.html
 │   └── static/
 │       └── app.css         # Minimal custom styles
 ├── .env                    # Textbee + Google credentials (existing)
@@ -147,6 +164,22 @@ One-time and recurring scheduled sends.
 
 ---
 
+### Help
+A static in-app reference page accessible from the sidebar. Covers:
+
+- **Getting Started** — prerequisites (Textbee account, Android app, API key), how to run the web app
+- **Send a Message** — how to pick recipients, use templates, and send
+- **Contacts** — how to add/edit/delete contacts, import from CSV, and sync with Google Contacts (including how to set up Google OAuth credentials)
+- **Templates** — how to create and use markdown templates, markdown syntax reference
+- **Schedule** — how to set up one-time and recurring scheduled messages, recurrence options explained
+- **History** — how to read the message log, what status values mean
+- **Settings** — where to find Textbee credentials, how to connect Google account
+- **CLI App** — brief note that `sms.py` continues to work independently and shares the same contacts database
+
+The Help page is rendered from a static Jinja2 template (no database access). It is always accessible regardless of whether credentials are configured.
+
+---
+
 ## Google Contacts Integration
 
 - Uses **Google People API** via `google-auth-oauthlib` + `google-api-python-client`
@@ -200,6 +233,22 @@ python web_app/app.py
 ```
 
 The CLI app (`sms.py`) continues to work independently by running `python sms.py` as before.
+
+---
+
+### Help
+A static in-app reference page accessible from the sidebar. Covers:
+
+- **Getting Started** — prerequisites (Textbee account, Android app, API key), how to run the web app
+- **Send a Message** — how to pick recipients, use templates, and send
+- **Contacts** — how to add/edit/delete contacts, import from CSV, and sync with Google Contacts (including how to set up Google OAuth credentials)
+- **Templates** — how to create and use markdown templates, markdown syntax reference
+- **Schedule** — how to set up one-time and recurring scheduled messages, recurrence options explained
+- **History** — how to read the message log, what status values mean
+- **Settings** — where to find Textbee credentials, how to connect Google account
+- **CLI App** — brief note that `sms.py` continues to work independently and shares the same contacts database
+
+The Help page is rendered from a static Jinja2 template (no database access). It is always accessible regardless of whether credentials are configured.
 
 ---
 
