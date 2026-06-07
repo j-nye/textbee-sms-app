@@ -104,8 +104,7 @@ def google_connect():
     auth_url, state, flow = start_oauth_flow(client_secret_file, redirect_uri)
     session['google_oauth_state'] = state
     session['google_client_secret_file'] = client_secret_file
-    from flask import redirect as flask_redirect
-    return flask_redirect(auth_url)
+    return redirect(auth_url)
 
 
 @bp.route('/google/callback')
