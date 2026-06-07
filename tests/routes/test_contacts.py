@@ -27,14 +27,14 @@ def test_add_contact_normalizes_phone(client):
 
 
 def test_delete_contact(client, app):
-    client.post('/contacts/add', data={'name': 'Temp', 'phone': '5550001111', 'group_name': ''})
+    client.post('/contacts/add', data={'name': 'ContactToDelete', 'phone': '5550001111', 'group_name': ''})
     with app.app_context():
         from web_app.db import get_db
         db = get_db()
-        contact_id = db.execute("SELECT id FROM contacts WHERE name='Temp'").fetchone()[0]
+        contact_id = db.execute("SELECT id FROM contacts WHERE name='ContactToDelete'").fetchone()[0]
     response = client.post(f'/contacts/delete/{contact_id}', follow_redirects=True)
     assert response.status_code == 200
-    assert b'Temp' not in response.data
+    assert b'ContactToDelete' not in response.data
 
 
 def test_update_contact(client, app):
