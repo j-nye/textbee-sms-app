@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, redirect, url_for
 from . import db as database
 
 
@@ -16,6 +16,18 @@ def create_app(test_config=None):
         app.config.update(test_config)
 
     database.init_app(app)
+
+    from .routes import help, send, contacts, msg_templates, history, settings
+    app.register_blueprint(help.bp)
+    app.register_blueprint(send.bp)
+    app.register_blueprint(contacts.bp)
+    app.register_blueprint(msg_templates.bp)
+    app.register_blueprint(history.bp)
+    app.register_blueprint(settings.bp)
+
+    @app.route('/')
+    def index():
+        return redirect(url_for('send.index'))
 
     return app
 

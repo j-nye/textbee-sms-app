@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Help — SMS App{% endblock %}
+{% block content %}
+<h1>Help</h1>
+
+<div class="card">
+  <h2>Getting Started</h2>
+  <p>Prerequisites:</p>
+  <ol style="margin-left:20px;margin-top:8px;line-height:1.8">
+    <li>Create a free account at <strong>textbee.dev</strong></li>
+    <li>Install the Textbee Android app on your phone and link it to your account</li>
+    <li>Copy your <strong>API Key</strong> and <strong>Device ID</strong> from the Textbee dashboard</li>
+    <li>Enter them in <a href="{{ url_for('settings.index') }}">Settings</a></li>
+  </ol>
+  <p style="margin-top:12px">Run the app: <code>python web_app/app.py</code> then open <strong>http://localhost:5000</strong></p>
+</div>
+
+<div class="card">
+  <h2>Send a Message</h2>
+  <ol style="margin-left:20px;line-height:1.8">
+    <li>Go to <a href="{{ url_for('send.index') }}">Send</a></li>
+    <li>Choose a recipient — search by name, pick a group, or type a number</li>
+    <li>Type your message or select a saved <a href="{{ url_for('msg_templates.index') }}">Template</a></li>
+    <li>Click <strong>Send SMS</strong></li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>Contacts</h2>
+  <ul style="margin-left:20px;line-height:1.8">
+    <li><strong>Add:</strong> Click "Add Contact", fill in name and phone number, optionally a group</li>
+    <li><strong>Edit/Delete:</strong> Use the buttons in the contacts table</li>
+    <li><strong>Import CSV:</strong> Your CSV must have <code>Name</code> and <code>Phone</code> columns; <code>Group</code> is optional</li>
+    <li><strong>Google Sync:</strong> Click "Sync Google Contacts" — you'll be asked to sign in the first time. Contacts are merged by phone number.</li>
+  </ul>
+  <p style="margin-top:10px"><strong>Google OAuth setup:</strong> You need a Google Cloud project with the People API enabled and an OAuth 2.0 client ID (Desktop app type). Download the credentials JSON and set <code>GOOGLE_CLIENT_SECRET_FILE</code> in Settings.</p>
+</div>
+
+<div class="card">
+  <h2>Templates</h2>
+  <ul style="margin-left:20px;line-height:1.8">
+    <li>Go to <a href="{{ url_for('msg_templates.index') }}">Templates</a> and click "New Template"</li>
+    <li>Write your message using <strong>Markdown</strong> — a live preview is shown alongside the editor</li>
+    <li>Templates are selected on the Send page and rendered to plain text before sending</li>
+  </ul>
+  <p style="margin-top:10px"><strong>Markdown quick reference:</strong> <code>**bold**</code>, <code>*italic*</code>, <code>- list item</code>, blank line = new paragraph</p>
+</div>
+
+<div class="card">
+  <h2>History</h2>
+  <p>Every sent message is logged in <a href="{{ url_for('history.index') }}">History</a> with:</p>
+  <ul style="margin-left:20px;margin-top:8px;line-height:1.8">
+    <li><strong>sent</strong> — message delivered to the Textbee API queue successfully</li>
+    <li><strong>failed</strong> — an error occurred; click the row to see the error detail</li>
+  </ul>
+  <p style="margin-top:8px">Note: "sent" means Textbee accepted the request — delivery to the recipient depends on your phone being online.</p>
+</div>
+
+<div class="card">
+  <h2>Settings</h2>
+  <ul style="margin-left:20px;line-height:1.8">
+    <li><strong>API Key / Device ID:</strong> Found in your Textbee dashboard under "Devices"</li>
+    <li><strong>Test Connection:</strong> Sends a ping to the Textbee API to verify credentials</li>
+    <li><strong>Google Account:</strong> Connect to enable Google Contacts sync; Disconnect removes the stored token</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>CLI App</h2>
+  <p>The original <code>sms.py</code> command-line app continues to work independently. Both apps share the same <code>contacts.db</code> database, so contacts added in either app are visible in both.</p>
+  <p style="margin-top:8px">Run it with: <code>python sms.py</code></p>
+</div>
+{% endblock %}
