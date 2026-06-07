@@ -1,2 +1,89 @@
 {% extends "base.html" %}
-{% block content %}<h1>Coming soon</h1>{% endblock %}
+{% block title %}Send — SMS App{% endblock %}
+{% block content %}
+<h1>Send a Message</h1>
+
+<div class="card">
+  <form method="post">
+    <label>Recipient</label>
+    <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+      <label style="margin:0;display:flex;align-items:center;gap:6px;font-weight:normal">
+        <input type="radio" name="recipient_type" value="contact" onchange="showRecipient(this.value)"> Contact
+      </label>
+      <label style="margin:0;display:flex;align-items:center;gap:6px;font-weight:normal">
+        <input type="radio" name="recipient_type" value="group" onchange="showRecipient(this.value)"> Group
+      </label>
+      <label style="margin:0;display:flex;align-items:center;gap:6px;font-weight:normal">
+        <input type="radio" name="recipient_type" value="manual" checked onchange="showRecipient(this.value)"> Manual number
+      </label>
+    </div>
+
+    <div id="r-contact" style="display:none;margin-top:8px">
+      <select name="contact_id">
+        <option value="">— Select contact —</option>
+        {% for c in contacts %}
+        <option value="{{ c['id'] }}">{{ c['name'] }} ({{ c['phone'] }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div id="r-group" style="display:none;margin-top:8px">
+      <select name="group_name">
+        <option value="">— Select group —</option>
+        {% for g in groups %}
+        <option value="{{ g }}">{{ g }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div id="r-manual" style="margin-top:8px">
+      <input type="text" name="manual_phone" placeholder="+1XXXXXXXXXX or 10 digits">
+    </div>
+
+    <label style="margin-top:16px">Template (optional)</label>
+    <select name="template_id" onchange="loadTemplate(this.value)">
+      <option value="">— None, I'll type my message —</option>
+      {% for t in templates %}
+      <option value="{{ t['id'] }}" data-body="{{ t['body_markdown'] }}">{{ t['name'] }}</option>
+      {% endfor %}
+    </select>
+
+    <label style="margin-top:12px">Message</label>
+    <div style="display:flex;gap:12px;margin-top:4px">
+      <textarea id="message-body" name="message" rows="8" style="flex:1;font-family:monospace"
+        oninput="updatePreview(this.value)"></textarea>
+      <div style="flex:1">
+        <div class="label" style="margin-bottom:6px">Preview</div>
+        <div class="md-preview" id="msg-preview"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <button type="submit" class="btn btn-primary">Send SMS</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous"></script>
+<script>
+function showRecipient(type) {
+  ['contact','group','manual'].forEach(t => {
+    document.getElementById('r-' + t).style.display = t === type ? 'block' : 'none';
+  });
+}
+
+function loadTemplate(id) {
+  const opt = document.querySelector(`[name=template_id] option[value="${id}"]`);
+  if (opt && opt.dataset.body) {
+    document.getElementById('message-body').value = opt.dataset.body;
+    updatePreview(opt.dataset.body);
+  }
+}
+
+function updatePreview(md) {
+  if (window.marked) {
+    document.getElementById('msg-preview').innerHTML = marked.parse(md);
+  }
+}
+</script>
+{% endblock %}
