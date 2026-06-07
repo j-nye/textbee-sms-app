@@ -1,2 +1,72 @@
 {% extends "base.html" %}
-{% block content %}<h1>Coming soon</h1>{% endblock %}
+{% block title %}History — SMS App{% endblock %}
+{% block content %}
+<h1>Message History</h1>
+
+<div class="card" style="padding:14px">
+  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <label>Status</label>
+      <select name="status">
+        <option value="" {% if not status_filter %}selected{% endif %}>All</option>
+        <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+      </select>
+    </div>
+    <div>
+      <label>From</label>
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </div>
+    <div>
+      <label>To</label>
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </div>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+    <a href="{{ url_for('history.index') }}" class="btn btn-secondary">Clear</a>
+  </form>
+</div>
+
+{% if messages %}
+<div class="card" style="padding:0">
+  <table>
+    <thead>
+      <tr><th>Date / Time</th><th>Recipient(s)</th><th>Message</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+    {% for m in messages %}
+    <tr onclick="toggleDetail('detail-{{ m.id }}')" style="cursor:pointer">
+      <td style="white-space:nowrap;font-size:12px">{{ m.sent_at[:16].replace('T', ' ') }}</td>
+      <td style="font-size:12px">{{ m.recipient_display }}</td>
+      <td style="color:#475569">{{ m.message_preview }}</td>
+      <td>
+        <span style="font-size:12px;padding:2px 8px;border-radius:10px;
+          background:{% if m.status == 'sent' %}#dcfce7;color:#166534{% else %}#fee2e2;color:#991b1b{% endif %}">
+          {{ m.status }}
+        </span>
+      </td>
+    </tr>
+    <tr id="detail-{{ m.id }}" style="display:none;background:#f8fafc">
+      <td colspan="4" style="padding:12px;font-size:13px">
+        <strong>Full message:</strong>
+        <pre style="margin-top:6px;white-space:pre-wrap;font-family:inherit">{{ m.message }}</pre>
+        {% if m.error %}
+        <p style="margin-top:8px;color:#991b1b"><strong>Error:</strong> {{ m.error }}</p>
+        {% endif %}
+        <p style="margin-top:8px;color:#64748b;font-size:12px">To: {{ ', '.join(m.recipients) }}</p>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p style="color:#64748b">No messages yet.</p>
+{% endif %}
+
+<script>
+function toggleDetail(id) {
+  const row = document.getElementById(id);
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}
