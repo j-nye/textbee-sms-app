@@ -11,7 +11,7 @@
         <nav>
             <a href="{{ url_for('send.index') }}"         class="{{ 'active' if request.endpoint == 'send.index' }}">✉️ Send</a>
             <a href="{{ url_for('contacts.index') }}"     class="{{ 'active' if request.endpoint and request.endpoint.startswith('contacts.') }}">👥 Contacts</a>
-            <a href="{{ url_for('msg_templates.index') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('msg_templates.') }}">📋 Templates</a>
+            <a href="{{ url_for('msg_templates.index') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('msg_templates.') }}">📋 Snippets</a>
             <a href="{{ url_for('history.index') }}"      class="{{ 'active' if request.endpoint == 'history.index' }}">🕐 History</a>
             <a href="{{ url_for('settings.index') }}"     class="{{ 'active' if request.endpoint == 'settings.index' }}">⚙️ Settings</a>
             <a href="{{ url_for('help.index') }}"         class="{{ 'active' if request.endpoint == 'help.index' }}">❓ Help</a>

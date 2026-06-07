@@ -1,2 +1,81 @@
 {% extends "base.html" %}
-{% block content %}<h1>Coming soon</h1>{% endblock %}
+{% block title %}Contacts — SMS App{% endblock %}
+{% block content %}
+<h1>Contacts</h1>
+
+<div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+  <button class="btn btn-primary" onclick="document.getElementById('add-form').style.display='block';this.style.display='none'">+ Add Contact</button>
+  <button class="btn btn-secondary" onclick="document.getElementById('import-form').style.display='block';this.style.display='none'">Import CSV</button>
+  <a href="{{ url_for('contacts.google_sync') }}" class="btn btn-secondary">Sync Google Contacts</a>
+</div>
+
+<div id="add-form" class="card" style="display:none">
+  <h2>Add Contact</h2>
+  <form method="post" action="{{ url_for('contacts.add') }}">
+    <label>Name</label><input type="text" name="name" required>
+    <label>Phone</label><input type="text" name="phone" required placeholder="+1 or 10 digits">
+    <label>Group (optional)</label><input type="text" name="group_name" list="groups">
+    <datalist id="groups">{% for g in groups %}<option value="{{ g }}">{% endfor %}</datalist>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-form').style.display='none'">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<div id="import-form" class="card" style="display:none">
+  <h2>Import from CSV</h2>
+  <p style="font-size:13px;color:#64748b;margin-bottom:10px">CSV must have <code>Name</code> and <code>Phone</code> columns. <code>Group</code> is optional.</p>
+  <form method="post" action="{{ url_for('contacts.import_csv') }}" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv" required>
+    <div style="margin-top:14px"><button type="submit" class="btn btn-primary">Import</button></div>
+  </form>
+</div>
+
+{% if contacts %}
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>Name</th><th>Phone</th><th>Group</th><th></th></tr></thead>
+    <tbody>
+    {% for c in contacts %}
+    <tr>
+      <td>{{ c['name'] }}</td>
+      <td>{{ c['phone'] }}</td>
+      <td>{{ c['group_name'] or '—' }}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-secondary btn-sm" onclick="toggleEdit({{ c['id'] }})">Edit</button>
+        <form method="post" action="{{ url_for('contacts.delete', contact_id=c['id']) }}" style="display:inline" onsubmit="return confirm('Delete {{ c['name'] }}?')">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      </td>
+    </tr>
+    <tr id="edit-{{ c['id'] }}" style="display:none;background:#f8fafc">
+      <td colspan="4" style="padding:12px">
+        <form method="post" action="{{ url_for('contacts.edit', contact_id=c['id']) }}">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div><label>Name</label><input type="text" name="name" value="{{ c['name'] }}" required></div>
+            <div><label>Phone</label><input type="text" name="phone" value="{{ c['phone'] }}" required></div>
+            <div><label>Group</label><input type="text" name="group_name" value="{{ c['group_name'] or '' }}" list="groups"></div>
+            <div style="margin-top:20px;display:flex;gap:6px">
+              <button type="submit" class="btn btn-primary btn-sm">Save</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEdit({{ c['id'] }})">Cancel</button>
+            </div>
+          </div>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p style="color:#64748b">No contacts yet. Add one above or import a CSV.</p>
+{% endif %}
+
+<script>
+function toggleEdit(id) {
+  const row = document.getElementById('edit-' + id);
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}
