@@ -1,2 +1,33 @@
 {% extends "base.html" %}
-{% block content %}<h1>Coming soon</h1>{% endblock %}
+{% block title %}Settings — SMS App{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+
+<div class="card">
+  <h2>Textbee Credentials</h2>
+  <p style="color:#64748b;font-size:13px;margin-bottom:12px">Find these in your <a href="https://textbee.dev" target="_blank">Textbee dashboard</a> under Devices.</p>
+  <form method="post">
+    <label>API Key</label>
+    <input type="text" name="api_key" value="{{ env.get('TEXTBEE_API_KEY', '') }}">
+    <label>Device ID</label>
+    <input type="text" name="device_id" value="{{ env.get('TEXTBEE_DEVICE_ID', '') }}">
+    <label>Google OAuth Credentials File (path)</label>
+    <input type="text" name="google_client_secret_file" value="{{ env.get('GOOGLE_CLIENT_SECRET_FILE', '') }}" placeholder="/path/to/client_secret.json">
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <a href="{{ url_for('settings.test_connection') }}" class="btn btn-secondary">Test Connection</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Google Contacts</h2>
+  {% if google_connected %}
+    <p style="color:#16a34a;margin-bottom:12px">&#x2705; Connected</p>
+    <a href="{{ url_for('settings.google_disconnect') }}" class="btn btn-danger btn-sm">Disconnect</a>
+  {% else %}
+    <p style="color:#64748b;font-size:13px;margin-bottom:12px">Connect your Google account to sync contacts.</p>
+    <a href="{{ url_for('settings.google_connect') }}" class="btn btn-primary btn-sm">Connect Google Account</a>
+  {% endif %}
+</div>
+{% endblock %}
