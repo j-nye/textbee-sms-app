@@ -4,5 +4,5 @@ google-api-python-client>=2.100
 mistune>=3.3.4
 python-dotenv>=1.2.2
 pytest>=9.0.3
-requests>=2.33.0
+requests>=2.34.2
 urllib3>=2.7.0
