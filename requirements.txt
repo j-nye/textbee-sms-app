@@ -3,6 +3,6 @@ google-auth-oauthlib>=1.2
 google-api-python-client>=2.100
 mistune>=3.0
 python-dotenv>=1.2.2
-pytest>=9.0.3
+pytest>=9.1.1
 requests>=2.33.0
 urllib3>=2.7.0
