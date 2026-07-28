@@ -1,6 +1,6 @@
 Flask>=3.0
 google-auth-oauthlib>=1.2
-google-api-python-client>=2.100
+google-api-python-client>=2.198.0
 mistune>=3.0
 python-dotenv>=1.2.2
 pytest>=9.0.3
