@@ -78,6 +78,8 @@ python -m web_app.app
 
 Open **http://localhost:5000** in your browser.
 
+`contacts.db` is created automatically on first run with the correct schema — no manual setup or seed file needed. It's excluded from git (see `.gitignore`), so each clone starts with an empty database.
+
 By default the server runs with Flask's debugger and reloader **off**. To enable them during local development:
 
 ```bash
