@@ -61,17 +61,30 @@ A browser-based interface for the same SMS functionality, running locally alongs
 
 ### Setup
 
+Requires **Python 3.10+** (the project venv is built on 3.14).
+
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 ### Run
 
 ```bash
-python web_app/app.py
+source .venv/bin/activate
+python -m web_app.app
 ```
 
 Open **http://localhost:5000** in your browser.
+
+By default the server runs with Flask's debugger and reloader **off**. To enable them during local development:
+
+```bash
+FLASK_DEBUG=1 python -m web_app.app
+```
+
+Do not set `FLASK_DEBUG=1` if the app is reachable from anything other than `localhost` — the Werkzeug debugger allows arbitrary code execution.
 
 Both apps share `contacts.db` — contacts added in either app are visible in both.
 
@@ -83,6 +96,15 @@ Both apps share `contacts.db` — contacts added in either app are visible in bo
 4. Download the credentials JSON file
 5. In the web app, go to **Settings** and set the path to that file in "Google OAuth Credentials File"
 6. Click **Connect Google Account** to authorize
+
+---
+
+## Security Notes
+
+- **Credentials live in `.env`**, which is excluded from git via `.gitignore` and permissioned `600` (owner-only read/write). Never commit it.
+- **`FLASK_SECRET_KEY`** is generated automatically on first run and persisted to `.env`. Don't share this file — it signs session cookies and the Google OAuth `state` parameter.
+- **No authentication** is implemented on any route. The app is intended for single-user local use, bound to `127.0.0.1` by default. If you ever need to expose it beyond your own machine, add an auth layer first.
+- **Dependencies**: run `pip install pip-audit && pip-audit` periodically (or after updating `requirements.txt`) to check for newly disclosed CVEs in installed packages.
 
 ---
 

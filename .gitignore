@@ -1,0 +1,25 @@
+# Secrets & credentials
+.env
+token.json
+*.client_secret*.json
+
+# Local data
+contacts.db
+*.db
+
+# Python
+.venv/
+.venv.bak-py39/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS
+.DS_Store
+
+# Personal data / non-app files
+Guardians Team Roster.xlsx
+Guardians.md
+guardians_txt.csv
+textbee.dev.v2.7.1.apk
+.superpowers/
