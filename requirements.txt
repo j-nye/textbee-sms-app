@@ -1,4 +1,4 @@
-Flask>=3.0
+Flask>=3.1.3
 google-auth-oauthlib>=1.2
 google-api-python-client>=2.100
 mistune>=3.0
