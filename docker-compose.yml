@@ -4,7 +4,8 @@ services:
     container_name: sms-app
     restart: unless-stopped
     ports:
-      - "5050:5000"
+      # - "5050:5000"  # LAN access — only behind a TLS reverse proxy
+      - "127.0.0.1:5050:5000"
     volumes:
       - sms-app-data:/data
 

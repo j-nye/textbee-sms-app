@@ -66,6 +66,15 @@
 </div>
 
 <div class="card">
+  <h2>Account</h2>
+  <ul style="margin-left:20px;line-height:1.8">
+    <li><strong>First run:</strong> The app shows a one-time setup screen to create your username and password before you can use it.</li>
+    <li><strong>Change password:</strong> Go to <a href="{{ url_for('auth.change_password') }}">Password</a> in the sidebar — you'll need your current password to set a new one.</li>
+    <li><strong>Forgot your password?</strong> There's no email reset. See the "Password Recovery" section in the README for how to reset it directly in the database.</li>
+  </ul>
+</div>
+
+<div class="card">
   <h2>CLI App</h2>
   <p>The original <code>sms.py</code> command-line app continues to work independently. Both apps share the same <code>contacts.db</code> database, so contacts added in either app are visible in both.</p>
   <p style="margin-top:8px">Run it with: <code>python sms.py</code></p>

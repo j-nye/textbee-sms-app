@@ -15,7 +15,12 @@
             <a href="{{ url_for('history.index') }}"      class="{{ 'active' if request.endpoint == 'history.index' }}">🕐 History</a>
             <a href="{{ url_for('settings.index') }}"     class="{{ 'active' if request.endpoint == 'settings.index' }}">⚙️ Settings</a>
             <a href="{{ url_for('help.index') }}"         class="{{ 'active' if request.endpoint == 'help.index' }}">❓ Help</a>
+            <a href="{{ url_for('auth.change_password') }}" class="{{ 'active' if request.endpoint == 'auth.change_password' }}">🔑 Password</a>
         </nav>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="nav-logout">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">🚪 Sign Out</button>
+        </form>
     </div>
     <div id="content">
         {% with messages = get_flashed_messages(with_categories=true) %}
