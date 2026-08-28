@@ -7,6 +7,9 @@ token.json
 contacts.db
 *.db
 
+# Build artifacts
+dist/
+
 # Python
 .venv/
 .venv.bak-py39/
