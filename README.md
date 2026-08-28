@@ -92,7 +92,7 @@ Both apps share `contacts.db` — contacts added in either app are visible in bo
 
 ### Running in Docker (e.g. Synology DiskStation)
 
-The web app ships with a `Dockerfile` and `docker-compose.yml`. The container reads/writes `.env`, `contacts.db`, and `token.json` in a single `/data` volume (set via the `APP_DATA_DIR` env var), so all state survives container rebuilds.
+The web app ships with a `Dockerfile` and `docker-compose.yml`. The container reads/writes `.env`, `contacts.db`, and `token.json` in a single `/data` volume (set via the `APP_DATA_DIR` env var), so all state survives container rebuilds. `/data` is a **named Docker volume** (`sms-app-data`), not a bind-mounted folder — this matters on Synology, see below.
 
 **Build and run locally:**
 
@@ -100,19 +100,33 @@ The web app ships with a `Dockerfile` and `docker-compose.yml`. The container re
 docker compose up -d --build
 ```
 
-Open **http://localhost:5000**. A `data/` folder is created next to `docker-compose.yml` on first run — that's where `.env`, `contacts.db`, and `token.json` live.
+Open **http://localhost:5050**. Docker creates the `sms-app-data` named volume automatically on first run — that's where `.env`, `contacts.db`, and `token.json` live.
 
 **On Synology DiskStation (DSM 7.2+, Container Manager):**
+
+Use the **Project** feature (Compose-based), not the plain **Container → Create** wizard — the wizard only supports folder/file bind mounts, not named volumes, and this app's non-root container needs a named volume to avoid a Synology-specific ACL permission problem (see the gotcha below).
 
 1. Copy the project folder to the NAS (e.g. via File Station or `git clone` through SSH) — you don't need `.venv`, it's excluded from the image.
 2. Open **Container Manager** → **Project** → **Create**.
 3. Set the project path to the folder containing `docker-compose.yml`, and let it build from the Dockerfile.
-4. Start the project. The app listens on port `5000` (adjust the `ports:` mapping in `docker-compose.yml` first if that port is taken, e.g. `"8080:5000"`).
-5. Set TextBee credentials and Google OAuth in the **Settings** page as usual — they're saved into the `data/` folder on the NAS.
+4. Start the project. The app listens on host port `5050` by default (mapped to `5000` in the container) — **DSM's own web admin interface (nginx) uses port 5000**, so this app avoids that conflict out of the box. Adjust the `ports:` mapping in `docker-compose.yml` if `5050` is also taken.
+5. Set TextBee credentials and Google OAuth in the **Settings** page as usual — they're saved into the `sms-app-data` volume on the NAS.
 
-For the Google OAuth credentials JSON file: since the container can't see paths on your Mac, place the downloaded credentials file inside the `data/` folder (so it ends up at `/data/<file>.json` in the container) and enter that path in Settings, e.g. `/data/client_secret.json`.
+**If you already have a container running from the older bind-mount setup** (or created one via the Container wizard instead of a Project), recreate it via SSH instead so it gets a proper named volume:
 
-**Security note:** this app has no login/authentication (see Security Notes below). If the NAS is reachable beyond your LAN, restrict access at the DSM firewall or reverse proxy layer before exposing port 5000.
+```bash
+sudo /var/packages/ContainerManager/target/usr/bin/docker rm -f sms-app
+sudo /var/packages/ContainerManager/target/usr/bin/docker volume create sms-app-data
+sudo /var/packages/ContainerManager/target/usr/bin/docker run -d --name sms-app --restart unless-stopped -p 5050:5000 -v sms-app-data:/data sms-app:synology
+```
+
+(Path to the `docker` binary and the exact image tag may differ depending on how you built/imported it — check with `sudo /var/packages/ContainerManager/target/usr/bin/docker images`.)
+
+**Synology gotcha — ACLs vs. non-root containers:** this container runs as a non-root user (uid 1000) for security. If you bind-mount a regular Synology shared folder to `/data` instead of using a named volume, DSM's Btrfs ACL system silently overrides plain POSIX permissions (`chmod 777` included) — uid 1000 isn't a real DSM user, so it falls into the restrictive `everyone: read-only` ACL bucket and the app fails to boot with `PermissionError: [Errno 13] Permission denied: '/data/.env'`. A named Docker volume sidesteps DSM's ACL system entirely and just works — this is also how the container's `Dockerfile` already sets correct ownership on the `/data` directory before switching to the non-root user, so a fresh named volume inherits the right permissions automatically.
+
+For the Google OAuth credentials JSON file: since the container can't see paths on your Mac, place the downloaded credentials file inside the data volume (e.g. `docker cp client_secret.json sms-app:/data/`) and enter `/data/client_secret.json` as the path in Settings.
+
+**Security note:** this app has no login/authentication (see Security Notes below). If the NAS is reachable beyond your LAN, restrict access at the DSM firewall or reverse proxy layer before exposing the app's port.
 
 ### Google Contacts Setup
 
@@ -131,7 +145,7 @@ For the Google OAuth credentials JSON file: since the container can't see paths 
 - **`FLASK_SECRET_KEY`** is generated automatically on first run and persisted to `.env`. Don't share this file — it signs session cookies and the Google OAuth `state` parameter, which is now validated on callback to prevent login-CSRF.
 - **CSRF protection** (Flask-WTF) is enabled on all state-changing routes. All forms carry a token; the two routes that used to be CSRF-able `GET` links (Google contacts sync, Google disconnect) are now `POST`-only.
 - **No authentication** is implemented on any route. The app is intended for single-user local use, bound to `127.0.0.1` by default. If you ever need to expose it beyond your own machine, add an auth layer first. This matters more once containerized — see the Docker section above about binding to `127.0.0.1` on the host.
-- **Docker**: the container runs as a non-root user (`app`, uid 1000), not root. On Linux hosts (including Synology), files the app creates in the bind-mounted `data/` folder will be owned by uid 1000 — if your NAS's `data/` folder is owned by a different user and you hit permission errors, either `chown -R 1000:1000 data/` on the host or adjust the `useradd -u` line in the `Dockerfile` to match your NAS user's uid before building.
+- **Docker**: the container runs as a non-root user (`app`, uid 1000), not root. Use the named Docker volume (`sms-app-data`) declared in `docker-compose.yml` for `/data`, not a bind-mounted host folder — on Synology specifically, DSM's ACL system overrides POSIX permissions on bind-mounted shared folders and will silently deny uid 1000 write access even at `chmod 777`. See the Synology section above for details and the fix if you hit this.
 - **Dependencies**: run `pip install pip-audit && pip-audit` periodically (or after updating `requirements.txt`) to check for newly disclosed CVEs in installed packages.
 - **Secret scanning**: GitHub secret scanning + push protection are enabled on this repo, and a local [gitleaks](https://github.com/gitleaks/gitleaks) pre-commit hook blocks commits containing recognizable secret patterns. To set up the local hook after cloning:
 
