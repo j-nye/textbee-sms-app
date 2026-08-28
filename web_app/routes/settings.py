@@ -20,6 +20,8 @@ def _write_env(env_file, key, value):
     """Set or add a key in the .env file."""
     if not env_file:
         return
+    if '\n' in value or '\r' in value:
+        raise ValueError(f'{key} cannot contain newlines.')
     lines = []
     found = False
     if os.path.exists(env_file):
@@ -36,6 +38,7 @@ def _write_env(env_file, key, value):
         new_lines.append(f'{key}={value}\n')
     with open(env_file, 'w') as f:
         f.writelines(new_lines)
+    os.chmod(env_file, 0o600)
 
 
 @bp.route('/', methods=['GET', 'POST'])
@@ -47,14 +50,18 @@ def index():
         api_key = request.form.get('api_key', '').strip()
         device_id = request.form.get('device_id', '').strip()
         google_file = request.form.get('google_client_secret_file', '').strip()
-        _write_env(env_file, 'TEXTBEE_API_KEY', api_key)
-        _write_env(env_file, 'TEXTBEE_DEVICE_ID', device_id)
-        _write_env(env_file, 'GOOGLE_CLIENT_SECRET_FILE', google_file)
+        try:
+            _write_env(env_file, 'TEXTBEE_API_KEY', api_key)
+            _write_env(env_file, 'TEXTBEE_DEVICE_ID', device_id)
+            _write_env(env_file, 'GOOGLE_CLIENT_SECRET_FILE', google_file)
+        except ValueError as e:
+            flash(str(e), 'error')
+            return redirect(url_for('settings.index'))
         flash('Settings saved.', 'success')
         return redirect(url_for('settings.index'))
 
-    token_path = os.path.join(os.path.dirname(current_app.root_path), 'token.json')
-    google_connected = os.path.exists(token_path)
+    from ..google_sync import TOKEN_FILE
+    google_connected = os.path.exists(TOKEN_FILE)
     return render_template('settings.html', env=env, google_connected=google_connected)
 
 
@@ -111,26 +118,38 @@ def google_connect():
 def google_callback():
     from ..google_sync import SCOPES, TOKEN_FILE
     from google_auth_oauthlib.flow import InstalledAppFlow
+    from oauthlib.oauth2.rfc6749.errors import MismatchingStateError
     from flask import session, request as freq
 
     client_secret_file = session.get('google_client_secret_file', '')
-    if not client_secret_file:
+    expected_state = session.pop('google_oauth_state', None)
+    if not client_secret_file or not expected_state:
         flash('OAuth session expired. Please try again.', 'error')
         return redirect(url_for('settings.index'))
 
     redirect_uri = url_for('settings.google_callback', _external=True)
-    flow = InstalledAppFlow.from_client_secrets_file(client_secret_file, SCOPES, redirect_uri=redirect_uri)
-    flow.fetch_token(authorization_response=freq.url)
+    flow = InstalledAppFlow.from_client_secrets_file(
+        client_secret_file, SCOPES, redirect_uri=redirect_uri, state=expected_state
+    )
+    try:
+        flow.fetch_token(authorization_response=freq.url)
+    except MismatchingStateError:
+        flash('OAuth state mismatch. Please try connecting again.', 'error')
+        return redirect(url_for('settings.index'))
+    except Exception:
+        flash('Google OAuth callback failed. Please try again.', 'error')
+        return redirect(url_for('settings.index'))
     creds = flow.credentials
 
     with open(TOKEN_FILE, 'w') as f:
         f.write(creds.to_json())
+    os.chmod(TOKEN_FILE, 0o600)
 
     flash('Google account connected successfully!', 'success')
     return redirect(url_for('settings.index'))
 
 
-@bp.route('/google/disconnect')
+@bp.route('/google/disconnect', methods=['POST'])
 def google_disconnect():
     from ..google_sync import disconnect
     disconnect()

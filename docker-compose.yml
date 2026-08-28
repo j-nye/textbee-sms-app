@@ -1,0 +1,9 @@
+services:
+  sms-app:
+    build: .
+    container_name: sms-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data

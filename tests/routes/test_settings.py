@@ -16,6 +16,7 @@ def app_with_env(tmp_path):
         'DATABASE': db_path,
         'SECRET_KEY': 'test',
         'ENV_FILE': env_path,
+        'WTF_CSRF_ENABLED': False,
     })
     with app.app_context():
         init_db()

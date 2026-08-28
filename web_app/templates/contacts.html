@@ -6,12 +6,16 @@
 <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
   <button class="btn btn-primary" onclick="document.getElementById('add-form').style.display='block';this.style.display='none'">+ Add Contact</button>
   <button class="btn btn-secondary" onclick="document.getElementById('import-form').style.display='block';this.style.display='none'">Import CSV</button>
-  <a href="{{ url_for('contacts.google_sync') }}" class="btn btn-secondary">Sync Google Contacts</a>
+  <form method="post" action="{{ url_for('contacts.google_sync') }}" style="display:inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-secondary">Sync Google Contacts</button>
+  </form>
 </div>
 
 <div id="add-form" class="card" style="display:none">
   <h2>Add Contact</h2>
   <form method="post" action="{{ url_for('contacts.add') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Name</label><input type="text" name="name" required>
     <label>Phone</label><input type="text" name="phone" required placeholder="+1 or 10 digits">
     <label>Group (optional)</label><input type="text" name="group_name" list="groups">
@@ -27,6 +31,7 @@
   <h2>Import from CSV</h2>
   <p style="font-size:13px;color:#64748b;margin-bottom:10px">CSV must have <code>Name</code> and <code>Phone</code> columns. <code>Group</code> is optional.</p>
   <form method="post" action="{{ url_for('contacts.import_csv') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="file" name="file" accept=".csv" required>
     <div style="margin-top:14px"><button type="submit" class="btn btn-primary">Import</button></div>
   </form>
@@ -44,7 +49,8 @@
       <td>{{ c['group_name'] or '—' }}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-secondary btn-sm" onclick="toggleEdit({{ c['id'] }})">Edit</button>
-        <form method="post" action="{{ url_for('contacts.delete', contact_id=c['id']) }}" style="display:inline" onsubmit="return confirm('Delete {{ c['name'] }}?')">
+        <form method="post" action="{{ url_for('contacts.delete', contact_id=c['id']) }}" style="display:inline" onsubmit="return confirm('Delete this contact?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
       </td>
@@ -52,6 +58,7 @@
     <tr id="edit-{{ c['id'] }}" style="display:none;background:#f8fafc">
       <td colspan="4" style="padding:12px">
         <form method="post" action="{{ url_for('contacts.edit', contact_id=c['id']) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
             <div><label>Name</label><input type="text" name="name" value="{{ c['name'] }}" required></div>
             <div><label>Phone</label><input type="text" name="phone" value="{{ c['phone'] }}" required></div>

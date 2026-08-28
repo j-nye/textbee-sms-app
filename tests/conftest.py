@@ -17,6 +17,7 @@ def app():
         'DATABASE': db_path,
         'SECRET_KEY': 'test-secret',
         'ENV_FILE': None,
+        'WTF_CSRF_ENABLED': False,
     })
     with app.app_context():
         init_db()

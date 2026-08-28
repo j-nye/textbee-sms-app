@@ -3,7 +3,8 @@ import os
 from .textbee import normalize_phone
 
 SCOPES = ['https://www.googleapis.com/auth/contacts.readonly']
-TOKEN_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'token.json')
+DATA_DIR = os.environ.get('APP_DATA_DIR', os.path.dirname(os.path.dirname(__file__)))
+TOKEN_FILE = os.path.join(DATA_DIR, 'token.json')
 
 
 def is_connected() -> bool:

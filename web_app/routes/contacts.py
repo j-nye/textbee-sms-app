@@ -111,7 +111,7 @@ def import_csv():
     return redirect(url_for('contacts.index'))
 
 
-@bp.route('/google-sync')
+@bp.route('/google-sync', methods=['POST'])
 def google_sync():
     from ..google_sync import is_connected, get_credentials, fetch_google_contacts, extract_contacts, merge_contacts
     if not is_connected():

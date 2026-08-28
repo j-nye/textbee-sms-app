@@ -7,6 +7,7 @@
   <h2>Textbee Credentials</h2>
   <p style="color:#64748b;font-size:13px;margin-bottom:12px">Find these in your <a href="https://textbee.dev" target="_blank">Textbee dashboard</a> under Devices.</p>
   <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>API Key</label>
     <input type="text" name="api_key" value="{{ env.get('TEXTBEE_API_KEY', '') }}">
     <label>Device ID</label>
@@ -24,7 +25,10 @@
   <h2>Google Contacts</h2>
   {% if google_connected %}
     <p style="color:#16a34a;margin-bottom:12px">&#x2705; Connected</p>
-    <a href="{{ url_for('settings.google_disconnect') }}" class="btn btn-danger btn-sm">Disconnect</a>
+    <form method="post" action="{{ url_for('settings.google_disconnect') }}" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger btn-sm">Disconnect</button>
+    </form>
   {% else %}
     <p style="color:#64748b;font-size:13px;margin-bottom:12px">Connect your Google account to sync contacts.</p>
     <a href="{{ url_for('settings.google_connect') }}" class="btn btn-primary btn-sm">Connect Google Account</a>

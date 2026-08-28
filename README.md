@@ -90,6 +90,30 @@ Do not set `FLASK_DEBUG=1` if the app is reachable from anything other than `loc
 
 Both apps share `contacts.db` — contacts added in either app are visible in both.
 
+### Running in Docker (e.g. Synology DiskStation)
+
+The web app ships with a `Dockerfile` and `docker-compose.yml`. The container reads/writes `.env`, `contacts.db`, and `token.json` in a single `/data` volume (set via the `APP_DATA_DIR` env var), so all state survives container rebuilds.
+
+**Build and run locally:**
+
+```bash
+docker compose up -d --build
+```
+
+Open **http://localhost:5000**. A `data/` folder is created next to `docker-compose.yml` on first run — that's where `.env`, `contacts.db`, and `token.json` live.
+
+**On Synology DiskStation (DSM 7.2+, Container Manager):**
+
+1. Copy the project folder to the NAS (e.g. via File Station or `git clone` through SSH) — you don't need `.venv`, it's excluded from the image.
+2. Open **Container Manager** → **Project** → **Create**.
+3. Set the project path to the folder containing `docker-compose.yml`, and let it build from the Dockerfile.
+4. Start the project. The app listens on port `5000` (adjust the `ports:` mapping in `docker-compose.yml` first if that port is taken, e.g. `"8080:5000"`).
+5. Set TextBee credentials and Google OAuth in the **Settings** page as usual — they're saved into the `data/` folder on the NAS.
+
+For the Google OAuth credentials JSON file: since the container can't see paths on your Mac, place the downloaded credentials file inside the `data/` folder (so it ends up at `/data/<file>.json` in the container) and enter that path in Settings, e.g. `/data/client_secret.json`.
+
+**Security note:** this app has no login/authentication (see Security Notes below). If the NAS is reachable beyond your LAN, restrict access at the DSM firewall or reverse proxy layer before exposing port 5000.
+
 ### Google Contacts Setup
 
 1. Create a Google Cloud project at [console.cloud.google.com](https://console.cloud.google.com)
@@ -103,9 +127,11 @@ Both apps share `contacts.db` — contacts added in either app are visible in bo
 
 ## Security Notes
 
-- **Credentials live in `.env`**, which is excluded from git via `.gitignore` and permissioned `600` (owner-only read/write). Never commit it.
-- **`FLASK_SECRET_KEY`** is generated automatically on first run and persisted to `.env`. Don't share this file — it signs session cookies and the Google OAuth `state` parameter.
-- **No authentication** is implemented on any route. The app is intended for single-user local use, bound to `127.0.0.1` by default. If you ever need to expose it beyond your own machine, add an auth layer first.
+- **Credentials live in `.env`**, which is excluded from git via `.gitignore` and permissioned `600` (owner-only read/write) — enforced on every write, not just at creation. Never commit it.
+- **`FLASK_SECRET_KEY`** is generated automatically on first run and persisted to `.env`. Don't share this file — it signs session cookies and the Google OAuth `state` parameter, which is now validated on callback to prevent login-CSRF.
+- **CSRF protection** (Flask-WTF) is enabled on all state-changing routes. All forms carry a token; the two routes that used to be CSRF-able `GET` links (Google contacts sync, Google disconnect) are now `POST`-only.
+- **No authentication** is implemented on any route. The app is intended for single-user local use, bound to `127.0.0.1` by default. If you ever need to expose it beyond your own machine, add an auth layer first. This matters more once containerized — see the Docker section above about binding to `127.0.0.1` on the host.
+- **Docker**: the container runs as a non-root user (`app`, uid 1000), not root. On Linux hosts (including Synology), files the app creates in the bind-mounted `data/` folder will be owned by uid 1000 — if your NAS's `data/` folder is owned by a different user and you hit permission errors, either `chown -R 1000:1000 data/` on the host or adjust the `useradd -u` line in the `Dockerfile` to match your NAS user's uid before building.
 - **Dependencies**: run `pip install pip-audit && pip-audit` periodically (or after updating `requirements.txt`) to check for newly disclosed CVEs in installed packages.
 - **Secret scanning**: GitHub secret scanning + push protection are enabled on this repo, and a local [gitleaks](https://github.com/gitleaks/gitleaks) pre-commit hook blocks commits containing recognizable secret patterns. To set up the local hook after cloning:
 
