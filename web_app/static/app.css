@@ -49,6 +49,24 @@ body {
     border-left-color: #3b82f6;
 }
 
+#sidebar nav { flex: 1; }
+
+.nav-logout { margin: 0; padding: 0; }
+.nav-logout button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    color: #94a3b8;
+    font: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.nav-logout button:hover { background: #334155; color: #fff; }
+
 /* Main content */
 #content {
     flex: 1;
@@ -88,6 +106,14 @@ tr:last-child td { border-bottom: none; }
 
 /* Cards */
 .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+
+/* Reveal-toggle fields (e.g. masked secrets) */
+.reveal-field { display: flex; gap: 8px; align-items: center; }
+.reveal-field input { flex: 1; }
+
+/* Auth pages (login / setup) — standalone, no sidebar */
+.auth-wrap { margin: auto; width: 100%; max-width: 380px; padding: 24px; overflow: auto; }
+.auth-wrap .brand { font-weight: 700; font-size: 15px; margin-bottom: 16px; text-align: center; }
 
 /* Markdown preview */
 .md-preview { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; min-height: 80px; font-size: 13px; line-height: 1.6; }

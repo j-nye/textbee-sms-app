@@ -3,6 +3,7 @@ import tempfile
 import pytest
 from web_app.app import create_app
 from web_app.db import init_db
+from tests.conftest import seed_user
 
 
 @pytest.fixture
@@ -25,22 +26,30 @@ def app_with_env(tmp_path):
     os.unlink(db_path)
 
 
-def test_settings_page_loads(client):
-    response = client.get('/settings/')
+@pytest.fixture
+def auth_client_with_env(app_with_env):
+    app, env_path = app_with_env
+    user_id = seed_user(app)
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess['user_id'] = user_id
+    return client, env_path
+
+
+def test_settings_page_loads(auth_client):
+    response = auth_client.get('/settings/')
     assert response.status_code == 200
 
 
-def test_settings_shows_existing_credentials(app_with_env):
-    app, env_path = app_with_env
-    client = app.test_client()
+def test_settings_shows_existing_credentials(auth_client_with_env):
+    client, env_path = auth_client_with_env
     response = client.get('/settings/')
     assert b'test-key' in response.data
     assert b'test-device' in response.data
 
 
-def test_settings_save_updates_env_file(app_with_env):
-    app, env_path = app_with_env
-    client = app.test_client()
+def test_settings_save_updates_env_file(auth_client_with_env):
+    client, env_path = auth_client_with_env
     response = client.post('/settings/', data={
         'api_key': 'new-api-key',
         'device_id': 'new-device-id',

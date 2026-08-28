@@ -44,8 +44,24 @@ def init_db():
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            password_changed_at DATETIME,
+            failed_attempts INTEGER NOT NULL DEFAULT 0,
+            locked_until DATETIME
+        );
     ''')
     db.commit()
+
+
+def user_exists():
+    """True if a user account has been created."""
+    row = get_db().execute('SELECT 1 FROM users LIMIT 1').fetchone()
+    return row is not None
 
 
 def init_app(app):

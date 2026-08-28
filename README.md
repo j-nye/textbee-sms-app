@@ -137,6 +137,32 @@ For the Google OAuth credentials JSON file: since the container can't see paths 
 5. In the web app, go to **Settings** and set the path to that file in "Google OAuth Credentials File"
 6. Click **Connect Google Account** to authorize
 
+### Changing Your Password
+
+Sign in and go to **🔑 Password** in the sidebar. You'll need your current password plus a new one (minimum 10 characters) — this is the normal way to change it while you're logged in.
+
+### Password Recovery
+
+The web app requires signing in, and there's no email-based password reset for when you're locked out — if you forget your password, delete the `users` row from the database and restart. The app will show the first-run **/setup** screen again; your contacts, templates, and message history are untouched.
+
+**Docker:**
+
+```bash
+docker compose cp sms-app:/data/contacts.db ./contacts.db.bak   # back up first
+docker compose exec sms-app python -c "import sqlite3;c=sqlite3.connect('/data/contacts.db');c.execute('DELETE FROM users');c.commit()"
+docker compose restart sms-app
+```
+
+**Local / non-Docker:**
+
+```bash
+sqlite3 contacts.db "DELETE FROM users;"
+```
+
+Then restart the app.
+
+If the app is fronted by a TLS reverse proxy, set `SESSION_COOKIE_SECURE=true` in `.env` so session cookies are only sent over HTTPS. Leave it unset (or `false`) for plain-HTTP local/LAN use — setting it to `true` without TLS in front will make login silently fail, since browsers won't send a `Secure` cookie back over HTTP.
+
 ---
 
 ## Security Notes
@@ -144,7 +170,7 @@ For the Google OAuth credentials JSON file: since the container can't see paths 
 - **Credentials live in `.env`**, which is excluded from git via `.gitignore` and permissioned `600` (owner-only read/write) — enforced on every write, not just at creation. Never commit it.
 - **`FLASK_SECRET_KEY`** is generated automatically on first run and persisted to `.env`. Don't share this file — it signs session cookies and the Google OAuth `state` parameter, which is now validated on callback to prevent login-CSRF.
 - **CSRF protection** (Flask-WTF) is enabled on all state-changing routes. All forms carry a token; the two routes that used to be CSRF-able `GET` links (Google contacts sync, Google disconnect) are now `POST`-only.
-- **No authentication** is implemented on any route. The app is intended for single-user local use, bound to `127.0.0.1` by default. If you ever need to expose it beyond your own machine, add an auth layer first. This matters more once containerized — see the Docker section above about binding to `127.0.0.1` on the host.
+- **Login is required** for every route except the one-time first-run setup screen. The app is intended for single-user local use, bound to `127.0.0.1` by default — see the Docker section above about binding to `127.0.0.1` on the host, and the Password Recovery section above if you forget your password.
 - **Docker**: the container runs as a non-root user (`app`, uid 1000), not root. Use the named Docker volume (`sms-app-data`) declared in `docker-compose.yml` for `/data`, not a bind-mounted host folder — on Synology specifically, DSM's ACL system overrides POSIX permissions on bind-mounted shared folders and will silently deny uid 1000 write access even at `chmod 777`. See the Synology section above for details and the fix if you hit this.
 - **Dependencies**: run `pip install pip-audit && pip-audit` periodically (or after updating `requirements.txt`) to check for newly disclosed CVEs in installed packages.
 - **Secret scanning**: GitHub secret scanning + push protection are enabled on this repo, and a local [gitleaks](https://github.com/gitleaks/gitleaks) pre-commit hook blocks commits containing recognizable secret patterns. To set up the local hook after cloning:
