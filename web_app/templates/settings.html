@@ -6,6 +6,7 @@
 <div class="card">
   <h2>Textbee Credentials</h2>
   <p style="color:#64748b;font-size:13px;margin-bottom:12px">Find these in your <a href="https://textbee.dev" target="_blank">Textbee dashboard</a> under Devices.</p>
+  {# nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -- false positive: Flask-WTF CSRFProtect is enabled app-wide (web_app/app.py) and this form already sends a csrf_token() hidden field; this rule only recognizes Django's {% csrf_token %} tag. #}
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>API Key</label>
@@ -37,6 +38,7 @@
   <h2>Google Contacts</h2>
   {% if google_connected %}
     <p style="color:#16a34a;margin-bottom:12px">&#x2705; Connected</p>
+    {# nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -- false positive: Flask-WTF CSRFProtect is enabled app-wide (web_app/app.py) and this form already sends a csrf_token() hidden field; this rule only recognizes Django's {% csrf_token %} tag. #}
     <form method="post" action="{{ url_for('settings.google_disconnect') }}" style="display:inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-danger btn-sm">Disconnect</button>
