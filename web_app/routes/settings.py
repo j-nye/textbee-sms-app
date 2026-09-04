@@ -82,6 +82,7 @@ def test_connection():
     payload = json.dumps({'recipients': [], 'message': 'ping'}).encode()
     req = urllib.request.Request(url, data=payload, headers=headers, method='POST')
     try:
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected -- false positive: url is built from a fixed https://api.textbee.dev host template; only device_id (a path segment) is interpolated, so the scheme/host can't be attacker-controlled.
         urllib.request.urlopen(req)
         flash('Connection successful!', 'success')
     except urllib.error.HTTPError as e:
