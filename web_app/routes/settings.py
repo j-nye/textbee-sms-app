@@ -5,7 +5,7 @@ bp = Blueprint('settings', __name__, url_prefix='/settings')
 
 
 def _read_env(env_file):
-    values = {'TEXTBEE_API_KEY': '', 'TEXTBEE_DEVICE_ID': '', 'GOOGLE_CLIENT_SECRET_FILE': ''}
+    values = {'TEXTBEE_API_KEY': '', 'TEXTBEE_DEVICE_ID': '', 'GOOGLE_CLIENT_SECRET_FILE': '', 'APP_BASE_URL': ''}
     if env_file and os.path.exists(env_file):
         with open(env_file, 'r') as f:
             for line in f:
@@ -41,6 +41,19 @@ def _write_env(env_file, key, value):
     os.chmod(env_file, 0o600)
 
 
+def _google_redirect_uri(env):
+    """Build the Google OAuth redirect URI from the operator-configured APP_BASE_URL.
+
+    Never derived from the request Host header (see flask-url-for-external-true).
+    Returns None if APP_BASE_URL isn't configured.
+    """
+    base_url = env.get('APP_BASE_URL', '').strip().rstrip('/')
+    if not base_url:
+        return None
+    # nosemgrep: python.flask.security.audit.flask-url-for-external-true.flask-url-for-external-true -- fixed: built from an operator-configured APP_BASE_URL, not url_for(_external=True)'s request-Host-header-derived URL.
+    return base_url + url_for('settings.google_callback')
+
+
 @bp.route('/', methods=['GET', 'POST'])
 def index():
     env_file = current_app.config.get('ENV_FILE')
@@ -50,10 +63,12 @@ def index():
         api_key = request.form.get('api_key', '').strip()
         device_id = request.form.get('device_id', '').strip()
         google_file = request.form.get('google_client_secret_file', '').strip()
+        base_url = request.form.get('app_base_url', '').strip()
         try:
             _write_env(env_file, 'TEXTBEE_API_KEY', api_key)
             _write_env(env_file, 'TEXTBEE_DEVICE_ID', device_id)
             _write_env(env_file, 'GOOGLE_CLIENT_SECRET_FILE', google_file)
+            _write_env(env_file, 'APP_BASE_URL', base_url)
         except ValueError as e:
             flash(str(e), 'error')
             return redirect(url_for('settings.index'))
@@ -108,7 +123,11 @@ def google_connect():
         flash('Set GOOGLE_CLIENT_SECRET_FILE in Settings to the path of your Google OAuth credentials JSON.', 'error')
         return redirect(url_for('settings.index'))
 
-    redirect_uri = url_for('settings.google_callback', _external=True)
+    redirect_uri = _google_redirect_uri(env)
+    if not redirect_uri:
+        flash('Set Public Base URL in Settings before connecting Google (used to build the OAuth redirect link).', 'error')
+        return redirect(url_for('settings.index'))
+
     auth_url, state, flow = start_oauth_flow(client_secret_file, redirect_uri)
     session['google_oauth_state'] = state
     session['google_client_secret_file'] = client_secret_file
@@ -128,7 +147,13 @@ def google_callback():
         flash('OAuth session expired. Please try again.', 'error')
         return redirect(url_for('settings.index'))
 
-    redirect_uri = url_for('settings.google_callback', _external=True)
+    env_file = current_app.config.get('ENV_FILE')
+    env = _read_env(env_file)
+    redirect_uri = _google_redirect_uri(env)
+    if not redirect_uri:
+        flash('OAuth session expired. Please try again.', 'error')
+        return redirect(url_for('settings.index'))
+
     flow = InstalledAppFlow.from_client_secrets_file(
         client_secret_file, SCOPES, redirect_uri=redirect_uri, state=expected_state
     )

@@ -135,7 +135,8 @@ For the Google OAuth credentials JSON file: since the container can't see paths 
 3. Create OAuth 2.0 credentials (Desktop app type)
 4. Download the credentials JSON file
 5. In the web app, go to **Settings** and set the path to that file in "Google OAuth Credentials File"
-6. Click **Connect Google Account** to authorize
+6. In the same page, set **Public Base URL** to the URL you use to reach this app (e.g. `http://192.168.1.50:5050` for LAN use, or `https://sms.example.com` behind a reverse proxy) — this is used to build the OAuth redirect link instead of trusting the request's `Host` header
+7. Click **Connect Google Account** to authorize
 
 ### Changing Your Password
 

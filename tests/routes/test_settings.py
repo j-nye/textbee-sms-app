@@ -59,3 +59,75 @@ def test_settings_save_updates_env_file(auth_client_with_env):
         content = f.read()
     assert 'new-api-key' in content
     assert 'new-device-id' in content
+
+
+def test_google_connect_requires_base_url(auth_client_with_env, tmp_path):
+    client, env_path = auth_client_with_env
+    secret_file = tmp_path / 'client_secret.json'
+    secret_file.write_text('{}')
+    with open(env_path, 'a') as f:
+        f.write(f'GOOGLE_CLIENT_SECRET_FILE={secret_file}\n')
+
+    response = client.get('/settings/google/connect', follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'Public Base URL' in response.data
+
+
+def test_google_connect_builds_redirect_from_configured_base_url(auth_client_with_env, tmp_path, monkeypatch):
+    client, env_path = auth_client_with_env
+    secret_file = tmp_path / 'client_secret.json'
+    secret_file.write_text('{}')
+    with open(env_path, 'a') as f:
+        f.write(f'GOOGLE_CLIENT_SECRET_FILE={secret_file}\n')
+        f.write('APP_BASE_URL=https://sms.example.com\n')
+
+    captured = {}
+
+    def fake_start_oauth_flow(client_secret_file, redirect_uri):
+        captured['redirect_uri'] = redirect_uri
+        return 'https://accounts.google.com/o/oauth2/auth?fake=1', 'fake-state', object()
+
+    monkeypatch.setattr('web_app.google_sync.start_oauth_flow', fake_start_oauth_flow)
+
+    # Werkzeug's test client models real browser cookie-domain scoping: a
+    # session cookie set for 'localhost' is not attached to a request whose
+    # Host header says 'evil.example.com', so the login-required gate would
+    # otherwise redirect to /login before this view ever runs. A raw HTTP
+    # client forging the Host header (the actual attack this test targets)
+    # isn't bound by that browser policy, so re-register the same session
+    # cookie under the spoofed host to reach the view under test.
+    session_cookie = client.get_cookie('session', domain='localhost')
+    client.set_cookie(domain='evil.example.com', key='session', value=session_cookie.value)
+
+    response = client.get('/settings/google/connect', headers={'Host': 'evil.example.com'})
+
+    assert response.status_code == 302
+    assert captured['redirect_uri'] == 'https://sms.example.com/settings/google/callback'
+
+
+def test_google_callback_requires_base_url(auth_client_with_env, tmp_path):
+    client, env_path = auth_client_with_env
+    secret_file = tmp_path / 'client_secret.json'
+    secret_file.write_text('{}')
+    with client.session_transaction() as sess:
+        sess['google_oauth_state'] = 'fake-state'
+        sess['google_client_secret_file'] = str(secret_file)
+
+    response = client.get('/settings/google/callback?state=fake-state&code=abc', follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b'OAuth session expired' in response.data
+
+
+def test_settings_save_persists_base_url(auth_client_with_env):
+    client, env_path = auth_client_with_env
+    response = client.post('/settings/', data={
+        'api_key': 'k',
+        'device_id': 'd',
+        'app_base_url': 'https://sms.example.com',
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with open(env_path) as f:
+        content = f.read()
+    assert 'APP_BASE_URL=https://sms.example.com' in content

@@ -18,6 +18,8 @@
     <input type="text" name="device_id" value="{{ env.get('TEXTBEE_DEVICE_ID', '') }}">
     <label>Google OAuth Credentials File (path)</label>
     <input type="text" name="google_client_secret_file" value="{{ env.get('GOOGLE_CLIENT_SECRET_FILE', '') }}" placeholder="/path/to/client_secret.json">
+    <label>Public Base URL (for Google OAuth redirect)</label>
+    <input type="text" name="app_base_url" value="{{ env.get('APP_BASE_URL', '') }}" placeholder="https://sms.example.com">
     <div style="margin-top:16px;display:flex;gap:10px">
       <button type="submit" class="btn btn-primary">Save</button>
       <a href="{{ url_for('settings.test_connection') }}" class="btn btn-secondary">Test Connection</a>
