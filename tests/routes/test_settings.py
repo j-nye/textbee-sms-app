@@ -71,7 +71,7 @@ def test_google_connect_requires_base_url(auth_client_with_env, tmp_path):
     response = client.get('/settings/google/connect', follow_redirects=True)
 
     assert response.status_code == 200
-    assert b'Public Base URL' in response.data
+    assert b'before connecting Google' in response.data
 
 
 def test_google_connect_builds_redirect_from_configured_base_url(auth_client_with_env, tmp_path, monkeypatch):

@@ -25,7 +25,7 @@
 | # | Rule | File(s) | Verdict | Resolution |
 |---|------|---------|---------|------------|
 | 1 | `dependabot-missing-cooldown` | `.github/dependabot.yml` | True positive | Add `cooldown.default-days: 7` |
-| 2 | `django-no-csrf-token` (×14) | 8 templates | **False positive** — `CSRFProtect(app)` is active app-wide and every form already carries `{{ csrf_token() }}`; the rule only recognizes Django's `{% csrf_token %}` tag, not Jinja/Flask's function call | `nosemgrep` + justification comment on each form |
+| 2 | `django-no-csrf-token` (×14) | 7 templates | **False positive** — `CSRFProtect(app)` is active app-wide and every form already carries `{{ csrf_token() }}`; the rule only recognizes Django's `{% csrf_token %}` tag, not Jinja/Flask's function call | `nosemgrep` + justification comment on each form |
 | 3 | `flask-url-for-external-true` (×2) | `web_app/routes/settings.py:110,130` | True positive | Stop deriving the OAuth redirect URI from the request `Host` header; use an operator-configured `APP_BASE_URL` instead |
 | 4 | `dynamic-urllib-use-detected` (×3) | `sms.py:67`, `web_app/routes/settings.py:85`, `web_app/textbee.py:47` | **False positive** — URL host is a hardcoded literal (`api.textbee.dev`); only a path segment (`device_id`) is interpolated, so scheme/host can't be attacker-controlled | `nosemgrep` + justification comment |
 | 5 | `github-actions-mutable-action-tag` (×2) | `.github/workflows/tests.yml:17,20` | True positive | Pin to commit SHA + version comment |
