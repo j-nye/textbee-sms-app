@@ -1,3 +1,4 @@
+import re
 import tempfile
 import os
 from datetime import datetime, timedelta, timezone
@@ -23,6 +24,10 @@ def csrf_client():
     yield app.test_client()
     os.close(db_fd)
     os.unlink(db_path)
+
+
+def strip_csrf_token(data):
+    return re.sub(rb'name="csrf_token" value="[^"]*"', b'name="csrf_token" value=""', data)
 
 
 def test_setup_shown_when_no_user(client):
@@ -118,7 +123,10 @@ def test_login_unknown_username_fails(client, app):
         '/login', data={'username': TEST_USERNAME, 'password': 'wrong'}, follow_redirects=True)
     unknown_user_response = client.post(
         '/login', data={'username': 'nobody', 'password': 'wrong'}, follow_redirects=True)
-    assert known_user_response.data == unknown_user_response.data
+    # Compare bodies with the CSRF token normalized out: the token is re-signed
+    # (with a timestamp) on every render, so it can legitimately differ between
+    # these two requests even though the rest of the page is identical.
+    assert strip_csrf_token(known_user_response.data) == strip_csrf_token(unknown_user_response.data)
 
 
 def test_login_clears_pre_existing_session_keys(client, app):
