@@ -4,6 +4,7 @@
 <div class="card">
   <h2>Create Your Account</h2>
   <p style="color:#64748b;font-size:13px;margin-bottom:12px">This is a one-time setup screen — it only appears until an account exists.</p>
+  {# nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -- false positive: Flask-WTF CSRFProtect is enabled app-wide (web_app/app.py) and this form already sends a csrf_token() hidden field; this rule only recognizes Django's {% csrf_token %} tag. #}
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Username</label>

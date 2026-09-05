@@ -6,6 +6,7 @@
 <div class="card">
   <h2>Textbee Credentials</h2>
   <p style="color:#64748b;font-size:13px;margin-bottom:12px">Find these in your <a href="https://textbee.dev" target="_blank">Textbee dashboard</a> under Devices.</p>
+  {# nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -- false positive: Flask-WTF CSRFProtect is enabled app-wide (web_app/app.py) and this form already sends a csrf_token() hidden field; this rule only recognizes Django's {% csrf_token %} tag. #}
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>API Key</label>
@@ -17,6 +18,8 @@
     <input type="text" name="device_id" value="{{ env.get('TEXTBEE_DEVICE_ID', '') }}">
     <label>Google OAuth Credentials File (path)</label>
     <input type="text" name="google_client_secret_file" value="{{ env.get('GOOGLE_CLIENT_SECRET_FILE', '') }}" placeholder="/path/to/client_secret.json">
+    <label>Public Base URL (for Google OAuth redirect)</label>
+    <input type="text" name="app_base_url" value="{{ env.get('APP_BASE_URL', '') }}" placeholder="https://sms.example.com">
     <div style="margin-top:16px;display:flex;gap:10px">
       <button type="submit" class="btn btn-primary">Save</button>
       <a href="{{ url_for('settings.test_connection') }}" class="btn btn-secondary">Test Connection</a>
@@ -37,6 +40,7 @@
   <h2>Google Contacts</h2>
   {% if google_connected %}
     <p style="color:#16a34a;margin-bottom:12px">&#x2705; Connected</p>
+    {# nosemgrep: python.django.security.django-no-csrf-token.django-no-csrf-token -- false positive: Flask-WTF CSRFProtect is enabled app-wide (web_app/app.py) and this form already sends a csrf_token() hidden field; this rule only recognizes Django's {% csrf_token %} tag. #}
     <form method="post" action="{{ url_for('settings.google_disconnect') }}" style="display:inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-danger btn-sm">Disconnect</button>

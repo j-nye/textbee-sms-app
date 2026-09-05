@@ -64,6 +64,7 @@ def send_sms(api_key, device_id, recipients, message):
     req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers, method='POST')
     
     try:
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected -- false positive: url is built from a fixed https://api.textbee.dev host template; only device_id (a path segment) is interpolated, so the scheme/host can't be attacker-controlled.
         with urllib.request.urlopen(req) as response:
             result = json.loads(response.read().decode('utf-8'))
             print("Successfully sent message to API queue!")
