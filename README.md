@@ -126,7 +126,56 @@ sudo /var/packages/ContainerManager/target/usr/bin/docker run -d --name sms-app 
 
 For the Google OAuth credentials JSON file: since the container can't see paths on your Mac, place the downloaded credentials file inside the data volume (e.g. `docker cp client_secret.json sms-app:/data/`) and enter `/data/client_secret.json` as the path in Settings.
 
-**Security note:** this app has no login/authentication (see Security Notes below). If the NAS is reachable beyond your LAN, restrict access at the DSM firewall or reverse proxy layer before exposing the app's port.
+**Using a prebuilt image instead of building on the NAS:** if you build and push the image to a registry (e.g. a **private** Docker Hub repo), a Project can pull it instead of building. Build for the NAS's CPU (`linux/amd64` for most Synology models, `linux/arm64` for some; use both to be safe):
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -t <your-dockerhub-user>/sms-app:latest --push .
+```
+
+The image holds code only — `.dockerignore` keeps `.env`, `*.db`, `*.csv`, and `token.json` out, and runtime data lives in the `sms-app-data` volume, never in the image. Then use this Project compose file (log the NAS in to Docker Hub first under Container Manager → Registry → Settings if the repo is private):
+
+```yaml
+services:
+  sms-app:
+    image: <your-dockerhub-user>/sms-app:latest
+    container_name: sms-app
+    restart: unless-stopped
+    mem_limit: 512m
+    ports:
+      - "5050:5000"
+    volumes:
+      - sms-app-data:/data
+
+volumes:
+  sms-app-data:
+    name: sms-app-data
+```
+
+`name: sms-app-data` pins the volume name so it is the same regardless of the project name. About 512 MB of memory is a comfortable limit; the app typically uses far less.
+
+**Updating to a new version:** your data stays in the `sms-app-data` volume, so updating only replaces the code.
+
+- Built on the NAS from source: update the project folder (`git pull`), then in Container Manager choose Project → *Action* → *Build*, or over SSH run `sudo docker compose up -d --build`.
+- Prebuilt image: `sudo docker compose pull && sudo docker compose up -d`.
+
+**Never delete the `sms-app-data` volume.** Deleting a *container* is safe; the volume survives it. But `docker compose down -v`, `docker volume rm sms-app-data`, or choosing to delete volumes when removing a Project destroys your database and settings permanently.
+
+**Backup and restore:** all state lives in the volume (on a Synology it is under `/volume1/@docker/volumes/sms-app-data/_data/`, which File Station and Hyper Backup don't see by default). Make a tarball in a normal shared folder, then copy it off the NAS or include that folder in a Hyper Backup task. The archive contains your TextBee API key, so keep it private.
+
+```bash
+sudo mkdir -p /volume1/docker/backups
+sudo docker run --rm -v sms-app-data:/data -v /volume1/docker/backups:/backup alpine \
+  tar czf /backup/sms-app-data-$(date +%F).tar.gz -C /data .
+```
+
+To restore, stop the project and extract into the volume, restoring ownership for the app's non-root user (uid 1000):
+
+```bash
+sudo docker run --rm -v sms-app-data:/data -v /volume1/docker/backups:/backup alpine \
+  sh -c "cd /data && tar xzf /backup/sms-app-data-YYYY-MM-DD.tar.gz && chown -R 1000:1000 /data"
+```
+
+**Security note:** the app requires a login (see Security Notes below), but a plain `5050:5000` mapping serves it over unencrypted HTTP on your LAN, so your password and session cookie travel in the clear. For anything beyond a trusted home network, put it behind a TLS reverse proxy (DSM: Control Panel → Login Portal → Advanced → Reverse Proxy) and bind the port to `127.0.0.1:5050:5000` as the repo's `docker-compose.yml` does, restricting access at the DSM firewall as needed.
 
 ### Google Contacts Setup
 
