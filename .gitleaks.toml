@@ -1,0 +1,11 @@
+# Gitleaks config managed by the blueprint (blueprint update replaces it; your edits are kept as usual, with the
+# new version beside it as .gitleaks.toml.blueprint-new). The pre-commit hook and CI (`gitleaks git .`) load it
+# from the repository root; the Stop hook and `blueprint secrets` pass it with --config.
+# It keeps every default rule and only allowlists .claude/blueprint.lock, whose sha256 file hashes and commit ids
+# look like API keys to the generic-api-key rule. If you keep your own .gitleaks.toml, add the same path to it.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "blueprint lock file: file hashes and commit ids, not secrets"
+paths = ['''(^|/)\.claude/blueprint\.lock$''']

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Blocks commits that contain secrets (values redacted in the output).
+# Enable once per clone: git config core.hooksPath .githooks
+PATH="$HOME/.local/bin:$PATH:/opt/homebrew/bin:/usr/local/bin"
+# Secret-bearing files are blocked by name, before (and independent of) the gitleaks scan.
+top=$(git rev-parse --show-toplevel)
+if [ ! -r "$top/.githooks/secret-match.sh" ]; then
+  echo "pre-commit: .githooks/secret-match.sh missing; secret-file check skipped" >&2
+elif [ ! -r "$top/.githooks/secret-files" ]; then
+  echo "pre-commit: .githooks/secret-files list missing; secret-file check skipped" >&2
+else
+  . "$top/.githooks/secret-match.sh"
+  blocked=0
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    if secret_match_any "$top/.githooks/secret-files" "$f"; then
+      echo "pre-commit: $f looks like a secret file; add it to .gitignore (do not rename it); remove it from the index with: git rm --cached \"$f\"" >&2
+      blocked=1
+    fi
+  done <<EOT
+$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR)
+EOT
+  [ "$blocked" -eq 0 ] || exit 1
+fi
+command -v gitleaks >/dev/null || { echo "pre-commit: gitleaks not installed; secret scan skipped" >&2; exit 0; }
+if gitleaks git --help >/dev/null 2>&1; then
+  exec gitleaks git --pre-commit --staged --redact --no-banner --verbose .   # v8.19+
+else
+  exec gitleaks protect --staged --redact --no-banner --verbose              # older releases
+fi

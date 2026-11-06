@@ -2,6 +2,7 @@
 .env
 token.json
 *.client_secret*.json
+client_secret*.json
 
 # Local data
 contacts.db
@@ -26,3 +27,10 @@ Guardians.md
 guardians_txt.csv
 textbee.dev.v2.7.1.apk
 .superpowers/
+
+# >>> blueprint (managed block)
+.env.*
+*.pem
+*.key
+*.blueprint-new
+# <<< blueprint

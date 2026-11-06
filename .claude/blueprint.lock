@@ -1,0 +1,20 @@
+{
+  "version": "2026.11.02.1",
+  "commit": "80b13f663946a10cf5e1b6f6d9b2090091b1d792",
+  "files": {
+    ".claude/agents/Explore.md": "9f957ef685433375c39583342c916f5126291f294363e06bb73d0144306f41b3",
+    ".claude/agents/implementer.md": "da781e423a3389659964e80094a4e59eea23f2ea4939e0d5c0a7c4ec40ac2ef1",
+    ".claude/agents/reviewer.md": "48f6219b1238f517b53db4e7261d6826e1b386951e9f6f6db4db96d61d43ec41",
+    ".claude/agents/scaffolder.md": "eda6ec03a9e4ac4c24caad58351c86008bf6aac3c28140c2a1168d0995701f0b",
+    ".claude/agents/test-runner.md": "7bde05caf6cd48ca3217e39066d3cfe069ad16372c90f3f1549c9b5517a4a454",
+    ".claude/hooks/format.sh": "00c0325e391dae5f251e14496e2005630110a2109deeeaf8e4251decbf14d163",
+    ".claude/rules/delegation.md": "30e1429685e2ebb2ca9de5ebc350a728b606524eb07a660ebe51bc77b6eb748f",
+    ".claude/settings.json": "bf79cea233ba7de38072709bc40ea5f344f703c71dcd0ec541adfdd9e5922e77",
+    ".githooks/pre-commit": "692a11cb0cffe1380164cc41660d1f7469f43bf3a085469784100219f19f4f7d",
+    ".githooks/secret-files": "123feb0685d50d017ff4bc7248ef6c419d6ef1222398633972139ccaf27a71af",
+    ".githooks/secret-match.sh": "b99d5487bbe47caa3801793b81d52973c4ed784aeeeaf94d41ea6e666bc9ea8c",
+    ".github/workflows/security.yml": "1f611637bfdde56a2c969a268f4d49c1f5c2933eacb18075fd7f8011257b4477",
+    ".gitleaks.toml": "15802fbae59ad2835863bfc26a3e21c0ffce3451032f8707b18a630788482a48"
+  },
+  "base_commits": {}
+}
