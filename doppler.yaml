@@ -1,0 +1,4 @@
+# Doppler project/config for this repo. Once per clone: doppler setup --no-interactive
+setup:
+  - project: <doppler-project>
+    config: dev

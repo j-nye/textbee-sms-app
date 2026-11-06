@@ -1,0 +1,104 @@
+# Secret, code, dependency/IaC, and workflow scanning on pushes to main, pull requests, and weekly (new CVEs).
+# Everything is pinned: the action by commit SHA, binaries by sha256, the image by digest. After the
+# March 2026 Trivy compromise (CVE-2026-33634), never use mutable tags here. Dependabot bumps the
+# action SHA; bump tool versions + checksums by hand (see scripts/install-tools.sh in the blueprint).
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0              # scan full history
+          persist-credentials: false
+      - name: Gitleaks
+        env:
+          VERSION: 8.30.1
+          SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -sSfL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          echo "${SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          cd "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner --verbose .
+
+  secret-files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Tracked secret-bearing files
+        run: |
+          [ -r .githooks/secret-files ] || { echo "::error file=.githooks/secret-files::the secret-files list is missing, so no file can be checked; restore it (blueprint update --restore)"; exit 1; }
+          . .githooks/secret-match.sh
+          hits=$(git -c core.quotePath=false ls-files | secret_filter .githooks/secret-files)
+          [ -z "$hits" ] && exit 0
+          while IFS= read -r f; do echo "::error file=$f::secret-bearing file is tracked; add it to .gitignore and run: git rm --cached"; done <<< "$hits"
+          exit 1
+
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:1.177.0@sha256:acaac22ffc7b7cc5926de0751b223bce0b2491c33d18422fa72f632c78d81198
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Semgrep (Guardian, authenticated)
+        if: ${{ env.SEMGREP_APP_TOKEN != '' }}
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: semgrep ci
+      - name: Semgrep (local rules, no token configured)
+        if: ${{ env.SEMGREP_APP_TOKEN == '' }}
+        run: semgrep scan --config p/default --error --metrics off
+
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Trivy (dependencies + IaC)
+        env:
+          VERSION: 0.74.0
+          SHA256: 2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -sSfL -o trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-64bit.tar.gz"
+          echo "${SHA256}  trivy.tar.gz" | sha256sum -c -
+          tar -xzf trivy.tar.gz trivy
+          cd "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/trivy" fs . --scanners vuln,misconfig --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+
+  zizmor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: zizmor (workflows + Dependabot config)
+        env:
+          VERSION: 1.30.1
+          SHA256: e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a
+          GH_TOKEN: ${{ github.token }}   # enables online audits (impostor commits, known-vulnerable actions)
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -sSfL -o zizmor.tar.gz "https://github.com/zizmorcore/zizmor/releases/download/v${VERSION}/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${SHA256}  zizmor.tar.gz" | sha256sum -c -
+          tar -xzf zizmor.tar.gz zizmor
+          cd "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/zizmor" --format github .
