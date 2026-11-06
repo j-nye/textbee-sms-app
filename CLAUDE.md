@@ -4,10 +4,10 @@ Sends SMS through the Textbee API using your own Android phone as the gateway, f
 ## Commands
 Secrets come from Doppler (`doppler.yaml`): run anything that needs them with `doppler run -- <command>`.
 - Setup: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`
-- CLI app: `doppler run -- python3 sms.py`
-- Dev server: `doppler run -- python3 -m web_app.app` (serves <http://127.0.0.1:5000>; `FLASK_DEBUG=1` for debug)
+- CLI app: `doppler run -- .venv/bin/python sms.py`
+- Dev server: `doppler run -- .venv/bin/python -m web_app.app` (serves <http://127.0.0.1:5000>; `FLASK_DEBUG=1` for debug)
 - Docker: `docker compose up --build` (serves <http://127.0.0.1:5050>)
-- Test all / one: `pytest -q` / `pytest -q tests/test_db.py::test_name`
+- Test all / one: `.venv/bin/python -m pytest -q` / `.venv/bin/python -m pytest -q tests/test_db.py::test_name`
 - Lint + format: none configured (`.claude/hooks/format.sh` does nothing until a ruff config exists)
 - Typecheck: none configured
 
